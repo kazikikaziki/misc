@@ -1,0 +1,160 @@
+﻿# coding: utf8
+# *This file includes Japanese text*
+
+
+
+######################################################################
+#
+# CMake を使った Visual Studio ソリューションファイルの作成方法
+#
+# A. CMake をインストールする
+#
+# (A1) CMake(GUI)をダウンロードする http://www.cmake.org/download/
+# (A2) いくつかファイルを提示されるが、特に理由がなければ Windows win64-x64 Installer でよい。
+# (A3) インストールする
+#
+# B. CMake で .sln ファイルを作成する
+# (B1) CMake を起動する
+# (B2) [Where is the source code] を選択し、目的の CMakeList.txt があるフォルダを指定する
+# (B3) [Where is build the binaries] を選択し、slnファイルを作成するフォルダを指定する
+# (B4) [Configure] を選択
+# (B5) [Generate] を選択するとプロジェクトファイルが出来上がる
+#
+#
+# C. Visual Studio で開いてビルドする
+# 
+# (C1) CMake で [Open Project] を選ぶか、手順 B で作成した .sln ファイルを Visual Studio で開く
+#
+# (C2) デフォルトで選択されているプロジェクトを [ALL_BUILD] ではなく自分のプロジェクトにする
+#      ※この手順をやらないと、F5 で実行したときに「ALL_BUILD が開始できません」などとエラーが出る
+#      ・ソリューションエクスプローラで [ALL_BUILD] が太字になっているなら、以下の操作が必要
+#      ・ソリューションエクスプローラで自分のプロジェクトを選択する
+#      ・右クリックメニューから [スタートアッププロジェクトに指定] を選ぶ
+#      ・再びソリューションエクスプローラを見る。[ALL_BUILD] ではなく自分のプロジェクト名が太字になっていればOK
+#
+#      
+# D. Visual Studio ヒント
+#
+# *実行時のカレントディレクトリを、.sln があるフォルダではなく .exe のあるフォルダにする
+#      ・ソリューションエクスプローラで自分のプロジェクトを選択する
+#      ・右クリックメニューから [プロパティ] を選ぶ
+#      ・ツリーから [デバッグ] を選ぶ
+#      ・[構成] メニューを「すべての構成」にする（これで全ての構成に対して一括適用される）
+#      ・[作業ディレクトリ] の値を $(ProjectDir) から $(TargetDir) に変更する
+#
+# *ソリューション構成の表示サイズを広げる
+#      ・デフォルトだと[ソリューション構成]のドロップダウンリストの幅が小さく、
+#        短い名前でないと表示しきれない。
+#        ※ツールバー上で "Debug" とか"Release" とか表示されている部分
+#      ・ツールバー上で右クリックメニューを出し、[カスタマイズ]を選択。
+#      ・[コマンド]タブを選び、[ツールバー]ラジオボタンを選択、ドロップダウンリストから[標準]を選ぶ。
+#      ・GUI部品から[ソリューション構成]を選び、[選択したボタンの編集]をクリック。
+#      ・[幅]の値を適当に入れる。デフォルトが 65 なのでとりあえず2倍にして 130 と入れておけばだいたいOK
+#
+#
+# CMake よくつかう環境変数
+#
+# ${PROJECT_NAME}
+# プロジェクト名。 project(...) で指定した名前
+#
+# ${CMAKE_CURRENT_BINARY_DIR}
+# 現在処理中の CMakeLists.txt があるディレクトリ。
+# include されたファイルでこの変数を参照した場合は、「呼び出し元の」「CMakeLists.txtの」パスになる
+#
+# ${CMAKE_CURRENT_LIST_DIR}
+# 現在処理中のファイルがあるディレクトリ。
+# include されたファイルでこの変数を参照した場合は、「現在」実際に「処理中」のファイルパスになる
+#
+######################################################################
+
+
+cmake_minimum_required(VERSION 2.6)
+
+# プロジェクト名を設定
+project("MyGameProject")
+
+
+# ツールセットを設定
+set(CMAKE_GENERATOR_TOOLSET "v141_xp")
+
+
+# 自分のプロジェクトのファイルリスト
+file(GLOB Engine_UserSourceFiles
+	src/*.h
+	src/*.cpp
+)
+# ちなみに、サブフォルダまで一括で追加したい時は GLOB_RECURSE を使う
+# file(GLOB_RECURSE Engine_UserSourceFiles
+#	src/*.h
+#	src/*.cpp
+#)
+# とすると、src 以下のサブフォルダ内の全ての .h と .cpp ファイルが追加される
+
+
+# 自分のプロジェクトのリソースファイル
+# ※必ず include(CMake_source.txt) よりも前に設定する
+file(GLOB Engine_UserResourceFiles
+	src/*.rc
+	*.rc
+)
+
+
+# Visual Studio
+# ソリューションエクスプローラにフィルター（フォルダみたいなやつ）
+# を追加して、その中にリソースファイルをまとめておく
+source_group("Resource" FILES ${UserResourceFiles})
+
+
+# ゲームエンジンに含めるオプションライブラリ
+# ※必ず include(CMake_source.txt) よりも前に設定する
+# これらは省略可能で、省略した場合は CMake GUI に設定が表示される
+# 詳細は CMake_source.txt のコメントを参照
+set(Engine_UseBox2D  OFF) # Box2D のソースコードを取り込むかどうか
+set(Engine_UseBullet OFF) # Bullet Physics のソースコードを取り込むかどうか
+
+
+# ゲームエンジン本体のパス
+set(engineDir "./THIS/ENGINE/PATH")
+
+
+# ゲームエンジンのソースコードを取り込む
+include (${engineDir}/CMake_source.txt)
+
+
+# ゲームエンジンの Visual C++ 向け設定を取り込む
+include (${engineDir}/CMake_msvc.txt)
+
+
+# マルチコンフィグ設定。
+# デフォルトで入っている構成 Debug, Release をそのまま使うなら設定の必要なし
+
+# _CMake_addconf.txt のパスを変数に入れておく
+set(addconf ${engineDir}/CMake_addconf.txt)
+
+
+# デフォルトで入っている構成 Debug, Release を削除する
+if (1)
+	set(CMAKE_CONFIGURATION_TYPES "")
+endif()
+
+
+# 体験版の構成（例）
+if (1)
+	set(exe "GameTrial")  # 実行ファイルの基本名
+	set(dbg "TRIAL_D")    # デバッグ版の構成名
+	set(rel "TRIAL")      # リリース版の構成名
+	set(def "/DTRIAL")    # コンパイラフラグ
+	include(${addconf})   # 上記設定で構成を追加する
+endif()
+
+
+# 最終配布版の構成（例）
+if (1)
+	set(exe "Game")      # 実行ファイルの基本名
+	set(dbg "PUBLISH_D") # デバッグ版の構成名
+	set(rel "PUBLISH")   # リリース版の構成名
+	set(def "/DNOTEST")  # コンパイラフラグ
+	include(${addconf})  # 上記設定で構成を追加する
+endif()
+
+

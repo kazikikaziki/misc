@@ -1,0 +1,133 @@
+﻿#
+# Encode: UTF8(BOM)
+# Lang: Ja
+#
+#
+# このファイルは CMake のための設定ファイルで、主に Visual Studio での設定をまとめたもの。
+# 単独では利用できない。自分のプロジェクトの CMakeLists.txt 内から include して使う
+# 例） include(CMake_msvc.txt)
+#
+if (MSVC)
+	# _CRT_SECURE_NO_WARNINGS を定義し、
+	# 古い文字列関数 (strcpy) などで警告が発生しないようにする
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	
+	# NOMINMAX を定義し、
+	# Windows.h に含まれているマクロ min, max を無効にする
+	# (std::min, std::max が使えなくなるため）
+	add_definitions(-DNOMINMAX)
+
+	# DirectX SDK version
+	# 新旧どちらの SDK を使うか選択する。
+	# デフォルトは旧 SDK (DirectX SDK 2004-Oct)
+	# ちなみにこれを設定しても SDK のパスがセットされるわけではなく、
+	# 互換性に関する一部の設定が切り替わるだけである
+	option(D3D_LEGACY "Use Legacy DirectX SDK (2004 Oct)" ON)
+
+	# プログラム・データベース
+	# ※この設定は必須ではなく、単に好みの問題。
+	#	exe と同じ場所に pdb があると邪魔なので別の場所にしておく。
+	#	なお CMAKE_PDB_OUTPUT_DIRECTORY の値は
+	#	PDB_OUTPUT_DIRECTORY_*** の初期値として利用されるため、
+	#	add_executable() よりも先に設定する必要がある
+	set(CMAKE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+
+	# 複数プロセッサによるコンパイル（構成プロパティ→全般）
+	#   はい (/MP)
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /MP")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /MP")
+	
+	# デバッグ情報の形式（構成プロパティ→C/C++→全般）
+	# エディットコイティニュのプログラムデータベース(/ZI)
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /ZI")
+#	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /ZI")
+
+	# 最適化（構成プロパティ→C/C++→最適化）
+	#   無効 (/Od)
+	#   サイズの最適化 (/O1)
+	#   実行速度の最大化 (/O2)
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /Od")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /O2")
+
+	# インライン関数の展開（構成プロパティ→C/C++→最適化）
+	#   無効 (/Ob0)
+	#   拡張可能な関数すべて (/Ob2)
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /Ob0")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /Ob2")
+
+	# 組み込み関数を使用する（構成プロパティ→C/C++→最適化）
+	#   はい (/Oi)
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /Oi")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /Oi")
+
+	# 速度またはサイズを優先（構成プロパティ→C/C++→最適化）
+	#   実行速度を優先(/Ot)
+#	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /Ot")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /Ot")
+
+	# ランタイムライブラリ（構成プロパティ→C/C++→コード生成）
+	#   マルチスレッド (/MT)
+	#   マルチスレッド デバッグ (/MTd)
+	# この設定は EXE の作成時にのみ反映されるのか？
+	# スタティックライブラリは MD/MDd になってしまうため、
+	# Lua, Bullet などの設定と EXE の設定が異なってしまうことに注意
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /MTd")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /MT")
+
+	# アセンブリの出力（構成プロパティ→C/C++→出力ファイル）
+	# アセンブリ コード、コンピューター語コード、ソース コード (/FAcs)
+	set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG}    /FAcs")
+	set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}  /FAcs")
+
+	# リンカオプション
+	set(linkerOpts)
+	# サブシステム（構成プロパティ→リンカー→システム）
+	#   WINDOWS システムにする (WinMain がエントリポイントになる)
+	set(linkerOpts "${linkerOpts} /SUBSYSTEM:WINDOWS")
+	
+	# 安全な例外ハンドラーを含むイメージ（構成プロパティ→リンカー→詳細設定）
+	#   無効にする。有効になっているとエディットコンテニューができない
+	set(linkerOpts "${linkerOpts} /SAFESEH:NO")
+
+	# オプション適用
+	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${linkerOpts}")
+
+	# 必須ライブラリ
+	target_link_libraries(${PROJECT_NAME} "winmm") # timeGetTime
+	target_link_libraries(${PROJECT_NAME} "imm32") # ImmDisableIME
+	target_link_libraries(${PROJECT_NAME} "shlwapi") # File path functions
+	
+	# OpenGL
+	target_link_libraries(${PROJECT_NAME} "OPENGL32.LIB")
+	target_link_libraries(${PROJECT_NAME} "GLU32.LIB")
+
+	# DirectX
+	target_link_libraries(${PROJECT_NAME} "D3D9.LIB")
+	target_link_libraries(${PROJECT_NAME} "D3DX9.LIB")
+	target_link_libraries(${PROJECT_NAME} "DSOUND.LIB")
+	target_link_libraries(${PROJECT_NAME} "DXGUID.LIB")
+	if (D3D_LEGACY)
+		# 古い SDK (2004 OCT) を使う
+		target_link_libraries(${PROJECT_NAME} "DXERR9.LIB")
+	else()
+		# 新しい SDK (2010 JUN) を使う。
+		target_link_libraries(${PROJECT_NAME} "DXERR.LIB")
+	endif()
+	
+	# すでにDirectX9.0　は標準サポートされていなおらず
+	# ビルドしようとすると vsnprintf でリンカエラーが起きる。
+	# 互換性維持用のライブラリをリンクしておく
+	target_link_libraries(${PROJECT_NAME} "legacy_stdio_definitions.lib")
+endif()
+
+
+# DEBUG版のEXEとRELEASE版のEXEが同じフォルダ内に生成されるようにする
+# ※この記述はゲームエンジン側で一括で行うのではなく、各アプリ側で個別に行うのが良い
+if (0)
+	# 実行ファイルの生成先をこのファイル CMakeLists.txt と同じフォルダにする
+	set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_CURRENT_SOURCE_DIR})
+	set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR})
+	# DEBUG版とRELEASE版のEXEを同一フォルダ内においても問題ないよう、ファイル名を変えておく
+	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME_DEBUG   ${PROJECT_NAME}_d)
+	set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME_RELEASE ${PROJECT_NAME})
+endif()

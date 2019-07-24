@@ -1,0 +1,159 @@
+﻿# coding: utf8
+# *This file includes Japanese text*
+#
+# このファイルは CMake のための設定ファイルで、ゲームエンジンのソースファイルの設定をまとめたもの。
+# 単独では利用できない。自分のプロジェクトの CMakeLists.txt 内から include して使う
+# 例） include(CMake_source.txt)
+#
+#
+# ■include よりも前に以下の値を定義することができる
+#
+# Engine_UserSourceFiles（必須）
+# ユーザーのプロジェクトのソースとして取り込むファイルリスト。
+# 未定義（空文字列）の場合はエラーになる。
+# 例) file(GLOB Engine_UserSourceFiles "*.h" "*.cpp")
+#
+#
+# Engine_UseBox2D（オプション）
+# Box2D の有無を指定する。Box2D のソースコードを取り込むには、
+# この変数に真をセットしておく。
+# 未定義（空文字列）の場合は選択用のチェックボックスが出る
+# 例) set(Engine_UseBox2D 1)
+#
+#
+# Engine_UseBullet（オプション）
+# Bullet Physics の有無を指定する。Bullet Physics のソースコードを取り込むには、
+# この変数に真をセットしておく。
+# 未定義（空文字列）の場合は選択用のチェックボックスが出る
+# 例) set(Engine_UseBullet 0)
+#
+#################################################################
+
+# 必須識別子 Engine_UserSourceFiles の定義忘れをチェック
+if (NOT DEFINED Engine_UserSourceFiles)
+	message(FATAL_ERROR "Engine_UserSourceFiles is not defined")
+endif()
+
+
+# DirectX SDK version
+if (MSVC)
+	# 新旧どちらの SDK を使うか選択する。
+	# デフォルトは旧 SDK (DirectX SDK 2004-Oct)
+	# ちなみにこれを設定しても SDK のパスがセットされるわけではなく、
+	# 互換性に関する一部の設定が切り替わるだけ。
+	option(D3D_LEGACY "Use Legacy DirectX SDK (2004 Oct)" ON)
+endif()
+
+
+
+# ソースファイルのリストを作成する
+
+# Engine
+if (1)
+	file(GLOB coreFiles
+		${CMAKE_CURRENT_LIST_DIR}/core/*.c
+		${CMAKE_CURRENT_LIST_DIR}/core/*.cpp
+		${CMAKE_CURRENT_LIST_DIR}/core/*.h
+	)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/core)
+endif()
+
+
+# ImGui
+# https://github.com/ocornut/imgui
+if (1)
+	file(GLOB imguiFiles 
+		${CMAKE_CURRENT_LIST_DIR}/core/imgui/*.h
+		${CMAKE_CURRENT_LIST_DIR}/core/imgui/*.cpp
+	)
+endif()
+
+
+# Lua
+# https://www.lua.org/
+if (1)
+	file(GLOB luaFiles
+		${CMAKE_CURRENT_LIST_DIR}/core/lua/*.c
+		${CMAKE_CURRENT_LIST_DIR}/core/lua/*.h
+	)
+endif()
+
+
+# miniz
+# https://github.com/richgel999/miniz
+if (1)
+	file(GLOB minizFiles
+		${CMAKE_CURRENT_LIST_DIR}/core/miniz/*.c
+		${CMAKE_CURRENT_LIST_DIR}/core/miniz/*.h
+	)
+endif()
+
+
+# TinyXML2
+# http://www.grinninglizard.com/tinyxml2/index.html
+if (1) 
+	file(GLOB tinyxmlFiles
+		${CMAKE_CURRENT_LIST_DIR}/core/tinyxml/*.cpp
+		${CMAKE_CURRENT_LIST_DIR}/core/tinyxml/*.h
+	)
+endif()
+
+
+# Box2D (optional)
+# https://box2d.org/
+if (NOT DEFINED Engine_UseBox2D)
+	option(Engine_UseBox2D "Include Box2D Physics library" ON)
+endif()
+if (Engine_UseBox2D)
+	file(GLOB_RECURSE box2dFiles
+		${CMAKE_CURRENT_LIST_DIR}/libs/Box2D/*.h
+		${CMAKE_CURRENT_LIST_DIR}/libs/Box2D/*.cpp
+	)
+	# Box2D は自身をインクルードするために "Box2D/" で始まるパスを使っているので
+	# Box2D の一つ上のフォルダを指定する
+	include_directories("${CMAKE_CURRENT_LIST_DIR}/libs") 
+
+endif()
+
+
+# Bullet physics (optional)
+# https://github.com/bulletphysics
+if (NOT DEFINED Engine_UseBullet)
+	option(Engine_UseBullet "Include Bullet Physics library" ON)
+endif()
+if (Engine_UseBullet)
+	file(GLOB_RECURSE bulletFiles
+		${CMAKE_CURRENT_LIST_DIR}/libs/bullet/*.cpp
+		${CMAKE_CURRENT_LIST_DIR}/libs/bullet/*.h
+	)
+	include_directories(${CMAKE_CURRENT_LIST_DIR}/libs/bullet)
+endif()
+
+
+
+
+
+#########################################################################
+# ソースのグループ分け
+# ※ファイルが複数のフィルターにマッチする場合は「最後の」フィルターが適用される
+# また、存在しないファイルリストはそのまま無視されるだけなので、
+# オプションによって ON/OFF しているライブラリについては場合分けしなくてもよい
+#########################################################################
+source_group("Engine"           FILES ${coreFiles})
+source_group("Engine\\ImGUI"    FILES ${imguiFiles})
+source_group("Engine\\MiniZ"    FILES ${minizFiles})
+source_group("Engine\\Lua"      FILES ${luaFiles})
+source_group("Engine\\TinyXml"  FILES ${tinyxmlFiles})
+source_group("Engine\\Bullet"   FILES ${bulletFiles})
+source_group("Engine\\Box2D"    FILES ${box2dFiles})
+add_executable(${PROJECT_NAME}
+	${coreFiles}
+	${imguiFiles}
+	${minizFiles}
+	${luaFiles}
+	${tinyxmlFiles}
+	${bulletFiles}
+	${box2dFiles}
+	${Engine_UserSourceFiles}
+)
+

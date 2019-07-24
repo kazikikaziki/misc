@@ -1,0 +1,1370 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="ja">
+<body>
+	<meta content="text/html; charset=sjis" http-equiv="content-type">
+	<title>あやかしゲームエンジン開発マニュアル</title>
+	<style type="text/css">
+		body {
+			font-family: Helvetica,Arial,sans-serif;
+		}
+		hr {
+			padding: 0;
+			border: none;
+			border-top: medium double #444444;
+			text-align: center;
+		}
+		table {
+			border: solid 1px;
+			border-collapse: collapse;
+		}
+		td {
+			border: solid 1px;
+			border-collapse: collapse;
+		}
+		i {
+			color: #666666;
+		}
+	</style>
+</head>
+
+<body>
+<h1>あやかしゲームエンジン開発マニュアル</h1>
+
+<ul>
+	<li><a href="#build">ビルド</a>
+		<ul>
+			<li><a href="#build-wd">作業ディレクトリ</a></li>
+			<li><a href="#build-al">OpenAL ライセンスの注意</a></li>
+		</ul>
+	</li>
+	<li><a href="#cf">コンフィグ</a></li>
+	<li><a href="#img">テクスチャ</a>
+	</li>
+	<li><a href="#mesh">メッシュ</a>
+	</li>
+	<li><a href="#sp">スプライトアニメ</a>
+		<ul>
+			<li><a href="#sp-edge">EDGE2ファイルの準備</a></li>
+			<li><a href="#sp-make">スプライトアニメの作成</a></li>
+			<li><a href="#sp-attr">属性アニメの作成</a></li>
+		</ul>
+	</li>
+	<li><a href="#fsm">ステートマシン</a>
+	</li>
+	<li><a href="#ent">エンティティとシーン</a>
+	</li>
+	<li><a href="#shader">シェーダー</a>
+	</li>
+	<li><a href="#lib">使用ライブラリ・データ</a>
+		<ul>
+			<li><a href="#lib-mplus">M+ FONTS</a></li>
+			<li><a href="#lib-stb">stb</a></li>
+			<li><a href="#lib-z">zlib</a></li>
+			<li><a href="#lib-imgui">ImGui</a></li>
+			<li><a href="#lib-lua">Lua</a></li>
+			<li><a href="#lib-x">TinyXML</a></li>
+			<li><a href="#lib-y">LibYAML</a></li>
+		</ul>
+	</li>
+	<li><a href="#see">参考ライブラリ</a>
+		<ul>
+			<li><a href="#see-atb">AntTweakBar</a></li>
+			<li><a href="#see-fltk">FLTK</a></li>
+			<li><a href="#see-fw">GLFW</a></li>
+			<li><a href="#see-ew">GLEW</a></li>
+		</ul>
+	</li>
+</ul>
+
+
+
+<a name="build" />
+<h2>ビルド</h2>
+
+<p>Visual Studio 向けのビルド手順</p>
+<ol>
+	<li>CMake をインストールする</li>
+	<li>CMake で CMakeLists.txt を開き、Visual Studio 用のソリューションファイル XXX.sln を作成する</li>
+	<li>Visual Studio で XXX.sln を開く</li>
+	<li>[プロジェクト]→[XXXのプロパティ]→[構成プロパティ]→[デバッグ]→[作業ディレクトリ] の値を <tt>$(TargetDir)</tt> にする</li>
+</ol>
+
+<h3>CMake をインストールする</h3>
+<p>
+	あやかしエンジンのソースコードには、Visual Studio のプロジェクトファイルは含まれていません。
+	代わりに CMakeLists.txt が入っているので、CMake を使ってプロジェクトファイルを作ってください。
+</p>
+<p>
+	<b>CMake</b> は古臭い make の代わりになるモダンなヤツで、CMakeLists.txt を元にして Visual Studio でも
+	Xcode でも好きな開発環境向けのプロジェクトファイルを作ることができます。
+</p>
+<p>
+	<a href="https://cmake.org/download/">https://cmake.org/download/</a>
+	から Windows(Win32 Installer) をダウンロードしてインストールします。
+	インストールが終わったらスタートメニューから CMake (cmake gui) を起動してください。
+</p>
+
+<h3>CMake でプロジェクトファイルを作成する</h3>
+<p>
+	[Where is the source code] に CMakeLists.txt が置いてあるディレクトリを指定し、
+	[Where to build the binaries] には出力ディレクトリを設定してください。
+	[Configure] ボタンを押すと設定一覧が表示されるので適当に設定し、最後に [Generate] ボタンを押してください。
+</p>
+
+<a name="build-wd" />
+<h3>作業ディレクトリを設定する</h3>
+<p>
+CMakeLists.txt とは異なるフォルダにプロジェクトを作った場合、
+デバッグ起動時のワーキングディレクトリが想定した場所にならず、
+実行時にデータフォルダや設定ファイルを見つけられない場合があります。
+適当なバッチファイルを作ってもよいのですが、
+開発環境側の設定でワーキングディレクトリを指定しておくことをお勧めします。
+</p>
+<p>
+Visual Studio 2013 ならば、プロジェクトを開いた状態で
+[デバッグ]→[XXXのプロパティ]→[構成プロパティ]→[デバッグ] を開き、[作業ディレクトリ] の値を
+</p>
+<tt>$(TargetDir)</tt>
+<p>に設定します。これで実行ファイルと同じ場所が作業ディレクトリになります。</p>
+
+
+<a name="build-al" />
+<h3>OpenAL ライセンスの注意</h3>
+<p>
+	ビルド時に MO_BUILD_WITH_OPEN_AL を有効にしている場合、OpenAL の DLL にリンクするようになります。
+	OpenAL は LGPL ライセンスであるため、これを利用するプログラムは<b>リバースエンジニアリングを許可</b>しなければなりません。
+	わざわざ「許可します」と書く必要はありませんが、
+	プログラム配布時に「リバースエンジニアリングを禁止します」などと書かないよう注意してください。
+</p>
+
+<p>
+	LGPLに対する動的リンクの誤解<br>
+	<a href="http://atmarksharp.v01.in/posts/lgpl-dynamic-link.html">http://atmarksharp.v01.in/posts/lgpl-dynamic-link.html</a>
+</p>
+
+
+
+<a name="cf" />
+<h2>コンフィグ</h2>
+
+ゲームエンジンの動作に対する設定を変更するには config.xml に設定内容を記述します
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;config>
+		&lt;conf name="WarningNotification"  value="0" />
+		&lt;conf name="PausedOnStart" value="0" />
+	&lt;/config>
+</code></pre>
+
+<p>
+ゲームエンジンは起動直後にカレントディレクトリから config.xml を探し、その設定をロードします。
+カレントディレクトリに config.xml が存在しない場合は、実行ファイルに埋め込まれたリソースから
+リソース名が "config" かつリソースタイプが "xml" になっているものを探し、見つかればそれをロードします。
+どちらも見つからない場合はデフォルト設定のまま起動します。
+</p>
+
+<p>
+この設定 XML で設定可能な値は以下の通りです (リビジョン 9511 [16/06/02] 現在) 。<br>
+※このほかにも、各ゲーム固有の設定が存在する場合があります。ここに挙げているのはあくまでも
+全てのゲームで共通の、ゲームエンジンに対する設定です
+</p>
+<table>
+	<tr><td>WarningNotification</td><td>bool</td><td>実行中に発生した警告を画面に表示する</td></tr>
+	<tr><td>PausedOnStart</td><td>bool</td><td>一時停止の状態でゲームエンジンをスタートする</td></tr>
+	<tr><td>MakeTexturePack</td><td>bool</td><td>テクスチャ画像をブロック化する</td></tr>
+	<tr><td>TexturePack_EnableCellSpace</td><td>bool</td><td>テクスチャ画像をブロック化するとき、セルとセルの間を開けておく</td></tr>
+	<tr><td>TexturePack_ShowCellSpace</td><td>bool</td><td>テクスチャ画像のブロック化でセルとセルの間を開けておくとき、間のピクセルを目立つ色にしておく（デバッグ確認用）</td></tr>
+	<tr><td>ExportUnpackedImageWhenUsed</td><td>bool</td><td>実行中にブロック化解除画像を使った場合、その復元画像を png で書き出す（デバッグ確認用）</td></tr>
+	<tr><td>ShowImGuiDemo</td><td>bool</td><td>インスペクターに ImGUI サンプル用のメニューを表示する</td></tr>
+	<tr><td>GameResolutionX</td><td>int</td><td>ゲーム画面の解像度X</td></tr>
+	<tr><td>GameResolutionY</td><td>int</td><td>ゲーム画面の解像度Y</td></tr>
+	<tr><td>WindowSizeX</td><td>int</td><td>デフォルトのウィンドウサイズX</td></tr>
+	<tr><td>WindowSizeY</td><td>int</td><td>デフォルトのウィンドウサイズY</td></tr>
+	<tr><td>FullScreenResolutionX</td><td>int</td><td>フルスクリーン解像度X</td></tr>
+	<tr><td>FullScreenResolutionY</td><td>int</td><td>フルスクリーン解像度Y</td></tr>
+	<tr><td>DebugHelpFile</td><td>bool</td><td>システムメニューにゲームエンジンのヘルプメニューを表示する</td></tr>
+	<tr><td>GameHelpFile</td><td>bool</td><td>システムメニューにゲーム実装のヘルプメニューを表示する</td></tr>
+	<tr><td>ShowFps</td><td>bool</td><td>画面にFPS値を表示する</td></tr>
+	<tr><td>ShowFpsAlpha</td><td>0.0 以上 1.0 以下</td><td>画面にFPS値を表示する場合、その文字のアルファ値</td></tr>
+<!--	<tr><td>Watermark</td><td>bool</td><td>画面に肉眼ではわからない程度の透かし画像を入れる</td></tr> -->
+	<tr><td>DependencyCheckMode</td><td>bool</td><td>ゲームの実行はせずに、差分ビルドのテストだけを行う。ビルドされるであろうファイルをログに出力して終了する</td></tr>
+	<tr><td>Verbose</td><td>bool</td><td>詳細ログを出力する</td></tr>
+</table>
+
+※bool 値には 1 または 0 のどちらかを指定します。1 は YES を、0 は NO を表します
+
+
+<a name="img" />
+<h2>テクスチャ画像を用意する</h2>
+<p>
+	テクスチャ画像には、BMP、PNG、GIF、EDG 形式が利用可能です。<br>
+	テクスチャ画像のサイズ（縦横のピクセル数）は 2 の整数乗にする必要がありますが、
+	そうなっていない場合はゲームエンジン側で自動的に余白が追加されます。
+</p>
+
+<a name="mesh" />
+<h2>メッシュファイルを用意する</h2>
+<p>
+	画像を表示するためにはメッシュを用意しなければなりません。<br>
+	メッシュは、テクスチャ画像のどの範囲をどこに表示するか、などを指定します。
+	ただし、<b>どのテクスチャ画像を表示するのかまでは指定しません</b>。<br>
+	（この方式の利点は、異なるテクスチャ画像に対して同じメッシュを使いまわせることです）
+</p>
+<p>
+	メッシュ用のファイルには拡張子が .xmesh である XML ファイルを使います。
+	たとえば 640 x 480 の画面全体を覆うようなメッシュ screen.mesh を作成するなら、screen.xmesh というファイル名で以下のような XML を作成します。
+</p>
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&ltMesh>
+		&ltPos2D>
+			-320  240
+			 320  240
+			 320 -240
+			-320 -240
+		&lt/Pos2D>
+		&ltUV>
+			0 0
+			1 0
+			1 1
+			0 1
+		&lt/UV>
+		&ltTriangleList>
+			0 1 2
+			2 3 0
+		&lt/TriangleList>
+	&lt/Mesh>
+</code></pre>
+
+Mesh タグ内には以下のタグを置くことができます
+<ul>
+<li><b>Pos2D</b><br>
+	&lt;Pos2D>x y x y ...&lt;/Pos2D><br>
+	頂点座標を X Y で指定します。空白または改行で区切られた小数で指定し、2個の小数がひとつの頂点を表します
+</li><br>
+
+<li><b>Pos3D</b><br>
+	&lt;Pos3D>x y z x y z ...&lt;/Pos3D><br>
+	頂点座標を X Y Z で指定します。空白または改行で区切られた小数で指定し、3個の小数がひとつの頂点を表します
+</li><br>
+
+<li><b>Colors</b><br>
+	&lt;Colors>r g b a r g b a ...&lt;/Colors><br>
+	頂点色を R G B A で指定します。空白または改行で区切られた小数で指定し、4個の小数がひとつの頂点を表します
+</li><br>
+
+<li><b>UV</b><br>
+	&lt;UV [unit="uv|px"]>u v u v ...&lt;/UV><br>
+	頂点のテクスチャ座標を U V で指定します。空白または改行で区切られた小数で指定し、2個の小数がひとつの頂点を表します<br>
+	UV タグには属性 unit を指定できます。<br>
+	unit="uv" の場合、テクスチャ座標は UV 座標系（画像左上が 0,0 右下が 1,1）で指定されています<br>
+	unit="px" の場合、テクスチャ座標はピクセル単位で指定されています<br>
+	unitを省略するか unit="" にした場合は unit="uv" と同じです
+</li><br>
+
+<li><b>TriangleList</b><br>
+	&lt;TriangleList [Texture="sample.tez"] [TexW="256"] [TexH="256"] [Blend="alpha"]>i0 i1 i2 i3 ...&lt;/TriangleList><br>
+	頂点インデックスを指定し、その頂点から成るサブメッシュを形成します。
+	インデックスは空白または改行で区切られた整数で指定します。<br>
+	頂点の結合方法は Direct3D / OpenGL における D3DPT_TRIANGLELIST / GL_TRIANGLES と同じです。<br>
+	このタグは、次の属性を持ちます<br>
+	<ul>
+		<li>Texture -- テクスチャ名</li>
+		<li>TexW -- テクスチャ幅ピクセル数（UVタグで unit="uv" にした場合に、UV座標計算のために使用されます）</li>
+		<li>TexH -- テクスチャ高さピクセル数（UVタグで unit="uv" にした場合に、UV座標計算のために使用されます）</li>
+		<li>Blend -- デフォルトのブレンド方式 "one" "add" "alpha" "sub" mul" "screen" "zero"</li>
+	</ul>
+</li><br>
+
+<li><b>TriangleStrip</b><br>
+	&lt;TriangleStrip [Texture="sample.tex"] [TexW="256"] [TexH="256"] [Blend="alpha"]>i0 i1 i2 i3 ...&lt;/TriangleList><br>
+	TriangleList と同じですが、頂点の結合方法は Direct3D / OpenGL における D3DPT_TRIANGLESTRIP / GL_TRIANGLE_STRIP に対応します
+</li><br>
+
+<li><b>TriangleFan</b><br>
+	&lt;TriangleFan [Texture="sample.tex"] [TexW="256"] [TexH="256"] [Blend="alpha"]>i0 i1 i2 i3 ...&lt;/TriangleList><br>
+	TriangleList と同じですが、頂点の結合方法は Direct3D / OpenGL における D3DPT_TRIANGLEFAN / GL_TRIANGLE_FAN に対応します
+</li><br>
+
+</ul>
+
+
+
+<a name="sp" />
+<h2>スプライトアニメ</h2>
+
+
+<a name="sp-edge" />
+<h3>EDGE2ファイルの準備</h3>
+<p>一番簡単にスプライトアニメを作成するには、EDGE2 (有料) でファイルを作ります。</p>
+
+<p><a href="http://takabosoft.com/edge2/">http://takabosoft.com/edge2/</a></p>
+
+<p><li>
+	ページまたはラベルの色を「赤」に設定すると、ゲームエンジン側ではそのページを無視します。
+	無視したページは初めから存在しなかったものとして扱うので、ページ番号を指定する時には注意してください。
+	レイヤーのラベルの色を「赤」に設定した場合も、同様にして無視 レイヤーとして扱います。
+</li></p>
+
+<p><li>
+	ディレイを設定すると、その値がそのままゲームエンジン側で使われます。
+</li></p>
+
+<p><li>
+	ページ、レイヤーごとの可視、不可視設定（目玉のマーク）は、アニメの作成には無関係です
+</li></p>
+
+<p><li>
+	レイヤーの名前をシャープ記号 # で始めた場合には、その名前をゲームエンジンから参照できるようになります。
+	例えば１枚の絵（ページ）がキャラクターと武器の合計２枚のレイヤーから成る場合、武器レイヤーの名前を
+	#weapon としておけば、ゲームエンジン側からレイヤー名 weapon を指定して表示、非表示を設定することができます。
+	もちろんレイヤー番号で指定することもできますが、武器がキャラクターよりも奥にあったり手前にあったり、前後関係が変化する場合には
+	レイヤー名で設定したほうが効率的です。
+</li></p>
+
+
+<a name="sp-make" />
+<h3>スプライトアニメの作成</h3>
+<p>
+	スプライトアニメとは、あらかじめ用意された複数の絵を順番に表示していくタイプのアニメです。
+	スプライトアニメ用のファイルには拡張子が .xclip である XML ファイルを使います。
+	たとえば EDGE2 ファイル player.edg からクリップを作成なら、player.xclip というファイル名で以下のような XML を作成します。
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;Edge>
+		<i>&lt;!-- 元の EDGE2 ファイルに含まれているページをグループ化する --></i>
+		<i>&lt;!-- 元の EDGE2 ファイルとは、このファイルと同じ名前で拡張子だけが異なる EDGE2 ファイルのこと --></i>
+		&lt;MakeGroup>
+			&lt;Page Group="page_group_stay"/><i>&lt;!-- ページ 0 をグループ page_group_stay に追加 --></i>
+			&lt;Page Group="page_group_stay"/><i>&lt;!-- ページ 1 をグループ page_group_stay に追加 --></i>
+			&lt;Page Group="page_group_walk"/><i>&lt;!-- ページ 2 をグループ page_group_walk に追加 --></i>
+			&lt;Page Group="page_group_walk"/><i>&lt;!-- ページ 3 以降を全てグループ page_group_walk に追加 --></i>
+		&lt;/MakeGroup>
+
+		<i>&lt;!-- アニメクリップ stay を作成 --></i>
+		&lt;MakeClip Name="stay" Looping="1">
+			&lt;AddPage FromGroup="page_group_stay" /><i>&lt;!-- グループ page_group_stay を追加 --></i>
+		&lt;/MakeClip>
+
+		<i>&lt;!-- アニメクリップ walk を作成 --></i>
+		&lt;MakeClip Name="walk" Looping="1">
+			&lt;AddPage FromGroup="page_group_walk" /><i>&lt;!-- にグループ page_group_walk を追加 --></i>
+		&lt;/MakeClip>
+	&lt;/Edge>
+</code></pre>
+
+
+<hr>
+<a name="tag-MakeGroup">
+<h4>&lt;MakeGroup [File="<i>string</i>"]></h4>
+<p>
+	EDGE2 ファイルにあるページを取り出し、画像グループに追加します。
+</p>
+<p>
+	画像グループとは、アニメクリップを作る手間を省くために、アニメに使う画像をあらかじめまとめておくことです。
+	グループにはどんな名前を付けても構いません。
+	ここで作ったグループは <a href="#tag-AddPages">&lt;AddPages></a> で使います。
+</p>
+<p>
+	File パラメータには EDGE2 ファイル名を指定します。これを省略したり、空文字列を指定した場合、
+	デフォルトの EDGE2 ファイルを指定したことになります。
+	デフォルトの EDGE2 ファイルとは、この XML ファイルと同じ名前で拡張子だけが .edg になっているファイルのことです。
+	例えば XML ファイル名が player.xclip であれば、デフォルトの EDGE2 ファイルは player.edg になります。
+</p>
+<ul>
+	<li>
+	&lt;MakeGroup> を省略した場合、すべてのページがデフォルト名のグループに追加されます。<br>
+	デフォルト名とは、この XML のファイル名から拡張子を除いた名前です。<br>
+	例えばファイル名が player.xml だった場合、デフォルトのグループ名は player になります
+	</li>
+</ul>
+
+
+<hr>
+<a name="tag-Page">
+<h4>&lt;Page [Group="<i>string</i>"]></h4>
+<p>
+	<a href="#tag-MakeGroup">&lt;MakeGroup></a> の子要素として使い、EDGE2 ファイル内の 1 ページを表します。
+	連続する n 個の &lt;Page> は、そのまま EDGE2 ファイル内の連続する n 枚のページを表します。
+</p>
+<ul>
+	<li>EDGE2 側で赤い色のラベルを付けたページは、ゲームエンジン側で無視され、完全に存在しないものとして扱われます</li>
+	<li>Page には子要素として <a href="#tag-Parameters">&lt;Parameters></a> を追加することができます</li>
+	<li>&lt;Page> を省略した場合、すべてのページがグループに追加されます</li>
+</ul>
+
+
+<hr>
+<a name="tag-Layer">
+<h4>&lt;Layer [Group="<i>string</i>"]></h4>
+<p>
+	<a href="#tag-Page">&lt;Page></a> の子要素として使い、EDGE2 ファイル内のレイヤーからグループを作成します。
+</p>
+<ul>
+	<li>ページとレイヤーを同じグループに追加することはできません。例えばグループに対して１枚目には EDGE ページの画像を、２枚目には EDGE2 ページ内のレイヤーの画像を追加する、といったことはできません</li>
+	<li>EDGE2 側で赤い色のラベルを付けたレイヤーは、ゲームエンジン側で無視され、完全に存在しないものとして扱われます</li>
+	<li>Page には子要素として <a href="#tag-Parameters">&lt;Parameters></a> を追加することができます</li>
+</ul>
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;Edge>
+		&lt;MakeGroup>
+			<i>&lt;!-- ページ 0 に含まれるレイヤー(4枚) を、それぞれグループAに追加する --></i>
+			&lt;Page>
+				&lt;Layer Group="A"/><i>&lt;!-- Edge ページ 0 のレイヤー 0 をグループ A に --></i>
+				&lt;Layer Group="A"/><i>&lt;!-- Edge ページ 0 のレイヤー 1 をグループ A に --></i>
+				&lt;Layer Group="A"/><i>&lt;!-- Edge ページ 0 のレイヤー 2 をグループ A に --></i>
+				&lt;Layer Group="A"/><i>&lt;!-- Edge ページ 0 のレイヤー 3 以降を全てグループ A に --></i>
+			&lt;/Page>
+			<i>&lt;!-- ページ 1 に含まれるレイヤー(4枚) を、それぞれグループBに追加する --></i>
+			&lt;Page>
+				&lt;Layer Group="B"/><i>&lt;!-- Edge ページ 1 のレイヤー 0 をグループ B に --></i>
+				&lt;Layer Group="B"/><i>&lt;!-- Edge ページ 1 のレイヤー 1 をグループ B に --></i>
+				&lt;Layer Group="B"/><i>&lt;!-- Edge ページ 1 のレイヤー 2 をグループ B に --></i>
+				&lt;Layer Group="B"/><i>&lt;!-- Edge ページ 1 のレイヤー 3 以降を全てグループ B に --></i>
+			&lt;/Page>
+		&lt;/MakeGroup>
+		&lt;MakeClip>
+			&lt;AddPages FromGroup="A"/>
+		&lt;/MakeClip>
+		&lt;MakeClip>
+			&lt;AddPages FromGroup="B"/>
+		&lt;/MakeClip>
+	&lt;/Edge>
+</code></pre>
+
+<p>
+	レイヤーをグループに追加する時にも、ページの場合と同じように指定を省略することができるため、
+	ページ内の全てのレイヤーを同じグループに追加するなら以下のように書くこともできます
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;Edge>
+		&lt;MakeGroup>
+			&lt;Page>
+				&lt;Layer Group="A"/> &lt;!-- Edge ページ 0 のレイヤー 0 以降を全てグループ A に --></i>
+			&lt;/Page>
+			&lt;Page>
+				&lt;Layer Group="B"/> &lt;!-- Edge ページ 1 のレイヤー 0 以降を全てグループ B に --></i>
+			&lt;/Page>
+		&lt;/MakeGroup>
+		&lt;MakeClip>
+			&lt;AddPages FromGroup="A"/>
+		&lt;/MakeClip>
+		&lt;MakeClip>
+			&lt;AddPages FromGroup="B"/>
+		&lt;/MakeClip>
+	&lt;/Edge>
+</code></pre>
+</ul></p>
+
+
+<hr>
+<a name="tag-Parameters">
+<h4>&lt;Parameters Key0="Value0" Key1="Value1" Key2="Value2" ...></h4>
+<p>
+	<a href="#tag-Page">&lt;Page></a>、<a href="#tag-Layer">&lt;Layer></a>、<a href="#tag-AddPages">&lt;AddPages></a> の子要素として使い、特定のページやレイヤーに対して情報を追加します。
+	ここで設定した値をどのように利用するかは、完全にユーザーによるゲームの実装に任されます。
+</p>
+<p>
+	例えばあるページに対して IsGrounded=True と Blocked=False というデータを追加したい場合は、以下のように書きます。
+</p>
+<pre><code>
+	&lt;Page>
+		&lt;Parameters IsGrounded="True" Blocked="False" />
+	&lt;/Page>
+</code></pre>
+
+
+<hr>
+<a name="tag-MakeClip">
+<h4>&lt;MakeClip [Name="<i>string</i>"] [Looping="<i>0|1</i>"]></h4>
+<p>
+	アニメクリップを作成します。
+	ここで初めて、クリップがゲームエンジンに登録されることになります。
+</p>
+<p>
+	Name にはクリップ名を指定します。拡張子は必要ありません。
+	例えば Name="player_walk" と書いた場合、ゲームエンジン側からは player_walk.clip という名前で参照することができます。
+</p>
+<p>
+	クリップ名には、この XML ファイルが置いてあるディレクトリ名が反映されることに注意してください<br>
+	たとえば XML ファイルが clips フォルダ内にある場合には、clips/player_walk.clip という名前でないとアクセスできません
+</p>
+<p>
+	Name を省略した場合は、こ のXMLファイルの名前から拡張子を除いたファイル名をクリップ名として使います。
+	例えばこの XML ファイルが player.xclip の場合、クリップ名は player になります。
+</p>
+<p>
+	Looping にはループに対応したアニメクリップかどうかを 0 または 1 で指定します。
+	1 を指定した場合、このクリップの最後までアニメを再生し終わると自動的に先頭に戻ります。
+	0 を指定した場合、このクリップの最後までアニメを再生終わった時、先頭に戻らず最終フレームの絵を表示し続けます。
+	ただし、このループ挙動はデフォルトのものであり、アニメ再生時にループに関してなにも設定されなかった場合に適用されます。
+</p>
+
+
+<hr>
+<a name="tag-AddPages">
+<h4>&lt;AddPages [FromGroup="<i>string</i>"]></h4>
+<p>
+	<a href="#tag-MakeClip">&lt;MakeClip></a> の子要素として使い、クリップに対してページを追加します。
+</p>
+
+<p>
+	FromGroup には追加するページのグループ名を指定します。
+	これは <a href="#tag-MakeGroup">&lt;MakeGroup></a> で作成したグループ名のどれかになります。
+	FromGroup を省略すると、<a href="#tag-MakeClip">&lt;MakeClip></a> のクリップ名と同じ名前のグループを追加します
+</p>
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;Edge>
+		&lt;MakeGroup>
+			&lt;Page Group="stay"/><i>&lt;!-- Edge ページ 0 をグループ stay に --></i>
+			&lt;Page Group="stay"/><i>&lt;!-- Edge ページ 1 をグループ stay に --></i>
+			&lt;Page Group="walk"/><i>&lt;!-- Edge ページ 2 をグループ walk に --></i>
+			&lt;Page Group="walk"/><i>&lt;!-- Edge ページ 3 以降を全てグループ walk に --></i>
+		&lt;/MakeGroup>
+		&lt;MakeClip Name="stay" Looping="1">
+			&lt;AddPage /><i>&lt;!-- FromGroup 引数を省略。クリップと同じ名前である stay グループが追加される --></i>
+		&lt;/MakeClip>
+		&lt;MakeClip Name="walk" Looping="1">
+			&lt;AddPage /><i>&lt;!-- FromGroup 引数を省略。クリップと同じ名前である walk グループが追加される --></i>
+		&lt;/MakeClip>
+	&lt;/Edge>
+</code></pre>
+
+<p>
+	複数のグループを追加したい場合は、AddPage を必要な数だけ連続で書きます。
+	例えば以下のように書くと、all という名前で、グループ stay と walk を含むクリップが出来ます
+</p>
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;Edge>
+		&lt;MakeGroup>
+			&lt;Page Group="stay"/><i>&lt;!-- Edge ページ 0 をグループ stay に --></i>
+			&lt;Page Group="stay"/><i>&lt;!-- Edge ページ 1 をグループ stay に --></i>
+			&lt;Page Group="walk"/><i>&lt;!-- Edge ページ 2 をグループ walk に --></i>
+			&lt;Page Group="walk"/><i>&lt;!-- Edge ページ 3 以降を全てグループ walk に --></i>
+		&lt;/MakeGroup>
+		&lt;MakeClip Name="all" Looping="1">
+			&lt;AddPage FromGroup="stay" /><i>&lt;!-- stay グループを追加 --></i>
+			&lt;AddPage FromGroup="walk" /><i>&lt;!-- walk グループを追加 --></i>
+		&lt;/MakeClip>
+	&lt;/Edge>
+</code></pre>
+<p>
+	AddPages には子要素として <a href="#tag-Parameters">&lt;Parameters></a> を追加することができます。
+	ここで指定されたパラメータは、AddPages によって追加されるすべてのページに適用されます。
+	<a href="#tag-MakeGroup">&lt;MakeGroup></a> 内で既に <a href="#tag-Parameters">&lt;Parameters></a> が設定されている場合、
+	グループ内のページはこれらのパラメータを既に持っていますが、同じ名前の値がある場合は内容は新しいパラメータの内容で上書きされます
+</p>
+
+<p>
+	&lt;AddPage> を省略した場合、<a href="#tag-MakeClip">&lt;MakeClip></a> のクリップ名と同じグループ名が指定されたのと同じになります
+</p>
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" >
+	&lt;Edge>
+		&lt;MakeGroup>
+			&lt;Page Group="stay"/><i>&lt;!-- Edge ページ 0 をグループ stay に --></i>
+			&lt;Page Group="stay"/><i>&lt;!-- Edge ページ 1 をグループ stay に --></i>
+			&lt;Page Group="walk"/><i>&lt;!-- Edge ページ 2 をグループ walk に --></i>
+			&lt;Page Group="walk"/><i>&lt;!-- Edge ページ 3 以降を全てグループ walk に --></i>
+		&lt;/MakeGroup>
+		&lt;MakeClip Name="stay"/><i>&lt;!-- AddPage 要素を省略。stay グループが追加される --></i>
+		&lt;MakeClip Name="walk"/><i>&lt;!-- AddPage 要素を省略。walk グループが追加される --></i>
+	&lt;/Edge>
+</code></pre>
+
+<hr>
+<a name="tag-SpriteAnimationClip">
+<h4>&lt;SpriteAnimationClip [name="<i>string</i>"] [source="<i>string</i>"] [looping="0|1"] [RemoveEntityOnFinish="0|1"]></h4>
+<p>
+	Edge ファイル内のページをグループ化したりせずに、直接アニメーションクリップを定義します。<br>
+</p>
+<ul>
+	<li>
+		<b>name</b> には作成するアニメーションクリップ名を指定します（拡張子は不要）<br>
+		実際に作成されるクリップ名には、元になった .xclip ファイルがあるフォルダを反映した名前が付きます。
+		例えば "player/ani.xclip" 内でクリップ名 "run" が指定されているなら、実際に作成されるクリップ名は "player/run.clip" になります。<br>
+		省略した場合は XML と同じファイル名で拡張子だけが異なる名前が指定されたものとみなします。
+	</li>
+	<li>
+		<b>source</b> には作成元となる .edg ファイル名を指定します。<br>
+		省略した場合は XML と同じファイル名で拡張子だけが異なるファイルが指定されたものとみなします。
+	</li>
+	<li>
+		<b>looping</b> にはループするかどうかを 0 または 1 で指定します。規定値は 1 です
+	</li>
+	<li>
+		<b>RemoveEntityOnFinish</b> にはアニメ再生が終わった時にエンティティを自動削除するかどうかを 0 または 1 で指定します。規定値は 0 です
+	</li>
+</ul>
+
+<hr>
+<a name="tag-Sprite">
+<h4>&lt;Sprite [source="<i>string</i>"] [page="<i>string|int</i>"] [layer="<i>string|int</i>"]></h4>
+<p>
+	<a href="#tag-SpriteAnimationClip">&lt;SpriteAnimationClip></a> の子要素として使い、アニメーションクリップに含める画像を指定します。<br>
+	Sprite には子要素として <a href="#tag-Parameters">&lt;Parameters></a> を追加することができます。
+</p>
+<ul>
+	<li>
+		<b>source</b> には作成元となる .edg ファイル名を指定します。<br>
+		省略した場合は親となる &lt;SpriteAnimationClip> の source の値を使います
+	</li>
+	<li>
+		<b>page</b> には EDGE ファイルから取り出すページを指定します。指定できる値には以下のものがあります<br>
+		<ul>
+			<li>
+				&lt;Sprite page="all" /><br>
+				文字列 "all" を指定した場合、.edg ファイルに含まれている<b>すべてのページを一括指定</b>したことになります<br>
+				<br>
+			</li>
+			<li>
+				&lt;Sprite page="auto" /><br>
+				文字列 "auto" を指定した場合、ページ番号をインクリメントしながら自動設定します<br>
+				<p><code>
+					&lt;Sprite page="auto" /> &lt;!-- ページ 0 --><br>
+					&lt;Sprite page="auto" /> &lt;!-- ページ 1 --><br>
+					&lt;Sprite page="auto" /> &lt;!-- ページ 2 --><br>
+				</code></p>
+				ページ番号は source ごとに個別に管理されています
+				<p><code>
+					&lt;Sprite source="a.edg" page="auto" /> &lt;!-- a.edg のページ 0 --><br>
+					&lt;Sprite source="a.edg" page="auto" /> &lt;!-- a.edg のページ 1 --><br>
+					&lt;Sprite source="a.edg" page="auto" /> &lt;!-- a.edg のページ 2 --><br>
+					&lt;Sprite source="b.edg" page="auto" /> &lt;!-- b.edg のページ 0 --><br>
+					&lt;Sprite source="b.edg" page="auto" /> &lt;!-- b.edg のページ 1 --><br>
+					&lt;Sprite source="a.edg" page="auto" /> &lt;!-- a.edg のページ 3 --><br>
+				</code></p>
+			</li>
+			<li>
+				&lt;Sprite page="2" /><br>
+				ページ番号を直接指定したい場合は、整数を設定します<br>
+				<br>
+			</li>
+			<li>
+				<p><code>&lt;Sprite page="idle" /></code></p>
+				ページ名を直接指定します。（ただし <tt>"all" "auto"</tt> は特別な意味を持つ名前なので指定できません）<br>
+				<p>
+					ページ名とは、EDGE エディタ上でページやレイヤーにつけた名前のうち、シャープ記号 # が頭についているものです。<br>
+					例えば EDGE エディタ上でページの名前が <tt>"#idle"</tt> になっている場合、ゲームエンジンからは <tt>"idle"</tt> という名前で参照できます。
+				</p>
+				<p>
+					複数のページに同じ名前を付けることもできます。その場合、内部では自動的に 0 起算のインデックス値が割り振られます。
+				</p>
+				<p><code>
+					&lt;Sprite page="idle" /> <i>&lt;!-- "idle" と命名されたページのうち、インデックス 0 のもの --></i><br>
+					&lt;Sprite page="idle" /> <i>&lt;!-- "idle" と命名されたページのうち、インデックス 1 のもの --></i><br>
+					&lt;Sprite page="idle" /> <i>&lt;!-- "idle" と命名されたページのうち、インデックス 2 のもの --></i><br>
+				</code></p>
+				<p>
+				明確に、同一名ページのうちの何番目か指定したい場合は以下のようにインデックスを指定します。インデックスは 0 起算です<br>
+				</p>
+				<p><code>
+					&lt;Sprite page="idle.0" /> <i>&lt;!-- "idle" と命名されたページのうち、インデックス 0 のもの --></i><br>
+					&lt;Sprite page="idle.2" /> <i>&lt;!-- "idle" と命名されたページのうち、インデックス 2 のもの --></i><br>
+					&lt;Sprite page="idle.6" /> <i>&lt;!-- "idle" と命名されたページのうち、インデックス 6 のもの --></i><br>
+				</code></p>
+			</li>
+		</ul>
+	</li>
+	<li>
+		<p>
+			<b>layer</b> にはレイヤー番号またはレイヤーラベル名を指定します。
+			これを省略した場合は、<b>すべてのレイヤーを一括指定</b>したことになります。
+			番号やラベル名の扱いは page 属性と同じです
+		</p>
+		<p><code>&lt;Sprite page="idle" layer="face"/></code></p>
+	</li>
+</ul>
+
+
+
+<a name="sp-attr" />
+<h3>属性アニメの作成</h3>
+
+<p>
+	属性 (attribute) アニメとは、RGB値の変化やXY座標の移動など、何らかの数値を変化させるようなアニメを指します。
+	例えばアルファを変化させてフェードイン、フェードアウトのアニメを作るには、以下の XML を記述した fade.xclip というファイルを作ります。
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Clip Looping="0">
+		&lt;Curve Type="ColorA"> <i>&lt;!-- アルファの値をアニメーションさせる --></i>
+			&lt;Tween Len="60" From="0.0" To="1.0" /> <i>&lt;!-- 60フレームかけてアルファ値を 0.0 から 1.0 に変化させる --></i>
+			&lt;Tween Len="60" From="1.0" To="0.0" /> <i>&lt;!-- 60フレームかけてアルファ値を 1.0 から 0.0 に変化させる --></i>
+		&lt;/Curve>
+	&lt;/Clip>
+</code></pre>
+
+<p>
+	Curve ノードを複数書いた場合は、それぞれのアニメーションが同時進行で実行されます。
+	例えば、上記のフェードアニメと同時に位置を変化させたいなら以下のように書きます。
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Clip Looping="0">
+		&lt;Curve Type="ColorA"> <i>&lt;!-- アルファの値を変化させる --></i>
+			&lt;Tween Len="60" From="0.0" To="1.0" /><i>&lt;!-- 60フレームかけてアルファ値を 0.0 から 1.0 に変化させる --></i>
+			&lt;Tween Len="60"            To="0.0" /><i>&lt;!-- 60フレームかけてアルファ値を現在の値から 0.0 に変化させる --></i>
+		&lt;/Curve>
+
+		<i>&lt;!-- フェードイン、アウトと同時進行で、エンティティの 位置を右へ移動させる --></i>
+		&lt;Curve Type="PosX"><i>&lt;!-- X 座標を変 化させる --></i>
+			&lt;Tween Len="120" From="0" To="200" /><i>&lt;!-- 120 フレームかけて X 座標を 0 から 200 まで変化させる --></i>
+		&lt;/Curve>
+	&lt;/Clip>
+</code></pre>
+
+<h4>&lt;Curve [Target="entity-name"] [Type="attr_name"] [Index="attr_index"]></h4>
+<p>
+Target 属性には、操作対象となるエンティティの名前を指定します。<br>
+これを省略した場合、このアニメクリップをアタッチしているエンティティが操作対象になります
+</p>
+<p>
+Type 属性には、値を書き換えたい属性名を指定します。これには以下の値を指定できます (リビジョン 9648 [16/06/15] 現在)
+	<table>
+		<tr><td>ColorRGB</td>
+			<td>描画系コンポーネントの Red, Green, Blue 値（すべてに同じ値が入る）</td>
+		</tr>
+		<tr>
+			<td>ColorR</td>
+			<td>描画系コンポーネントの Red の値</td>
+		</tr>
+		<tr>
+			<td>ColorG</td>
+			<td>描画系コンポーネントの Green の値</td>
+		</tr>
+		<tr>
+			<td>ColorB</td>
+			<td>描画系コンポーネントの Blue の値</td>
+		</tr>
+		<tr>
+			<td>ColorA</td>
+			<td>描画系コンポーネントの Alpha の値</td>
+		</tr>
+		<tr>
+			<td>PosX</td>
+			<td>Transform の Position.x の値</td>
+		</tr>
+		<tr>
+			<td>PosY</td>
+			<td>Transform の Position.y の値</td>
+		</tr>
+		<tr>
+			<td>Scale</td>
+			<td>Transform の Scale.x と Scale.y の値（同じ値が入る）</td>
+		<tr>
+			<td>ScaleX</td>
+			<td>Transform の Scale.x の値</td>
+		</tr>
+		<tr>
+			<td>ScaleY</td>
+			<td>Transform の Scale.y の値</td>
+		<tr>
+			<td>SpecularRGB</td>
+			<td>描画系コンポーネントの Specular Red, Green Blue の値（すべてに同じ値が入る）</td>
+		</tr>
+		<tr>
+			<td>SpecularR</td>
+			<td>描画系コンポーネントの Specular Red の値</td>
+		</tr>
+		<tr>
+			<td>SpecularG</td>
+			<td>描画系コンポーネントの Specular Green の値</td>
+		</tr>
+		<tr>
+			<td>SpecularB</td>
+			<td>描画系コンポーネントの Specular Blue の値</td>
+		</tr>
+		<tr><td>Sprite</td>
+			<td>
+			SpriteRenderer のスプライト画像。Index 属性でレイヤー番号を指定する<br>
+			&lt;Tween>の ValueStr にスプライト名を指定する。<br>
+			スプライト名として空文字 "" を指定した場合、そのレイヤーを非表示にする
+			</td>
+		</tr>
+		<tr><td>SpriteLayers</td>
+			<td>SpriteRenderer のレイヤーのスプライト画像を一括指定する。&lt;SpriteLayers> の子要素として &lt;Sprite> を並べる<br>
+			</td>
+		</tr>
+		<tr><td>Blend</td>
+			<td>描画系コンポーネントのスプライト合成方法。Index でレイヤー番号を指定する<br>
+			&lt;Tween>の ValueStr には "one" "add" "alpha" "sub" "mul" "screen" "zero" のどれかを指定する</td>
+		</tr>
+		<tr><td>MaterialFloat.XXXX</td><td>マテリアルに設定されているシェーダーの float 型ユニフォーム変数 XXXX の値</td></tr>
+	</table>
+</p>
+
+<p>
+Index 属性には、操作対象が複数ある場合に識別するためのインデックス番号を指定します。
+例えばスプライトレンダラーのレイヤー[2] のマテリアルのアルファ値をセットしたい場合は、
+Type = "ColorA"  および Index = "2" を指定します
+</p>
+
+
+<hr>
+<h4>&lt;Tween Len="10" From="0.0" To="1.0" Ease="linear" /></h4>
+<p>
+Len 属性にはアニメ区間の所要時間をフレーム単位で設定します<br>
+From 属性にはこのアニメ区間における開始値を指定します。省略した場合は、直前の Tween の終了値が使われます<br>
+To 属性にはアニメ区間における終了値を指定します。省略した場合は開始値のまま変化しません<br>
+Ease 属性には From から To までの値の変化方法を指定します。
+Ease には insine(in) outsine(out) inoutsine(inout) perlin が指定できます（カッコ内は省略形です）。
+各補間方法の動きのイメージは <a href="http://easings.net/ja">http://easings.net/ja</a> を参照してください。
+このサイトの easeInSine, easeOutSine, easeInOutSine がそれぞれ in, out, inout に対応しています。
+</p>
+
+<h4>&lt;Tween Len="10" From="0.0" To="1.0" Ease="perlin" EaseParam="16" /></h4>
+<p>
+Ease 値に perlin を指定した場合、それはパーリンノイズになります。
+その場合、 From を最小値とし、To を最大値とするノイズ値をとります。<br>
+EaseParam はパーリンノイズの折り畳み回数値で、
+その値が大きいほど激しく変化するノイズに、最小値(1) になるほど滑らかなノイズになります。
+ノイズ折り畳み回数のデフォルト値は 16 です (リビジョン 9511 [16/06/02] 現在)
+</p>
+
+<h4>&lt;Tween Len="10" ValueStr="player/walk00.sprite" /></h4>
+<p>
+	Curve のターゲット値によっては、数値ではなく文字列を指定する必要があります。
+	Curve で Target = "sprite" や "blend" が指定された場合、Tween の値には From や To ではなく ValueStr を指定し、設定したい文字列を指定します。
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Clip Looping="0">
+		<i>&lt;!-- フェードイン --></i>
+		&lt;Curve Type="ColorA"> <i>&lt;!-- アルファの値を変化させる --></i>
+			&lt;Tween Len="60" From="0.0" To="1.0" Ease="inout" /> <i>&lt;!-- 60フレームかけてアルファ値を 0.0 から 1.0 になめらかに変化させる --></i>
+		&lt;/Curve>
+	&lt;/Clip>
+</code></pre>
+<hr>
+
+
+<a name="fsm" />
+<h2>ステートマシン</h2>
+
+<h3>ステートマシン用XMLファイル</h3>
+ステートマシンの記述には XML を用い、ファイル名の拡張子を .fsm にします。
+
+<hr>
+<pre><code>
+&lt;?xml version="1.0" encoding="sjis" ?>
+&lt;StateMachine>
+	&lt;IDLE>
+		&lt;Clip Name="idle"/> <i>&lt;!-- アニメーションクリップ idle.clip を指定（拡張子不要）--></i>
+		&lt;Action Name="something"/> <i>&lt;!-- このステートに入ってきた瞬間にアクション "something" を実行する--></i>
+		&lt;goto:WALK walk_button="on" /> <i>&lt;!-- シグナル "walk_button" が on だったら WALK に遷移する --></i>
+	&lt;/IDLE>
+	&lt;WALK>
+		&lt;Clip Name="walk"/> <i>&lt;!-- アニメーションクリップ walk.clip を指定（拡張子不要）--></i>
+		&lt;Action Name="something" Repeat="1"/> <i>&lt;!-- Repeat 属性を 1 にすると、毎フレームアクションを実行する --></i>
+		&lt;goto:IDLE walk_button="off" /> <i>&lt;!-- シグナル "walk_button" の値が off だったら IDLE に遷移する --></i>
+	&lt;/WALK>
+&lt;/StateMachine>
+</code></pre>
+<hr>
+
+
+<a name="ent" />
+<h2>エンティティとシーン</h2>
+
+<h3>エンティティ定義ファイル</h3>
+エンティティとそのコンポーネントを XML で記述し、ファイルの拡張子を .xentity にします。
+
+<hr>
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Entity Name="Boxer" Tag="1001">
+		&lt;Transform />
+		&lt;Hierarchy />
+		&lt;SpriteRenderer />
+		&lt;Damage />
+		&lt;Enemy />
+		&lt;Velocity />
+		&lt;ShadowCast />
+		&lt;Animation />
+		&lt;CharacterStatus />
+		&lt;Action action="boxer_action" />
+		&lt;PhysicalBody
+			bounce     = "0"
+			type       = "capsule"
+			center.y   = "64"
+			radius     = "24"
+			halfheight = "64"
+		/>
+		&lt;Collider
+			atkbox.enabled    = "0"
+
+			dmgbox.enabled    = "1"
+			dmgbox.center.y   = "64"
+			dmgbox.halfsize.x = "32"
+			dmgbox.halfsize.y = "64"
+			dmgbox.halfsize.z = "16"
+		 />
+
+	&lt;/Entity>
+</code></pre>
+
+<p>
+Entity タグはエンティティを定義します。最も単純な定義は単に
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Entity />
+</code></pre>
+と書くことです。これはコンポーネントを全く持たないエンティティを表します
+</p>
+
+<p>Entity タグには以下の要素を指定することができます (リビジョン 9511 [16/06/02] 現在) </p>
+<ul>
+	<li>"Name" -- エンティティの名前</li>
+	<li>"Tag" -- エンティティ分類用のタグ整数</li>
+</ul>
+
+Entity タグの子にはコンポーネントタグを書くことができます。
+コンポーネントタグの一例を示します (リビジョン 9511 [16/06/02] 現在) <br>
+<ul>
+	<li>Transform -- 座標、変形を表す</li>
+	<li>Hierarchy -- ツリー構造を表す</li>
+	<li>SpriteRenderer -- 2D画像の描画</li>
+	<li>PhysicalBody -- 物理衝突判定（重力にしたがって運動し、衝突した場合には互いの位置や速度が変化する）</li>
+	<li>Collider -- イベント用の衝突判定</li>
+	<li>Velocity -- 速度を表す</li>
+	<li>Animation -- アニメクリップを再生する</li>
+	<li>Action -- アクションを実行する</li>
+</ul>
+
+Transform コンポーネントだけを持つエンティティは、以下のように書きます
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Entity>
+		&lt;Transform />
+	&lt;/Entity>
+</code></pre>
+
+Transform の座標値を指定したい場合は、以下のように書きます
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Entity>
+		&lt;Transform pos.x="10" pos.y="20" pos.z="30" />
+	&lt;/Entity>
+</code></pre>
+
+
+
+<h3>シーン定義ファイル</h3>
+<p>
+複数のエンティティから構成されるシーンを XML で記述し、ファイルの拡張子を .xscene にします。
+シーン定義 XML は Scene タグを使い、Scene タグの子要素として必要なエンティティの数だけ LoadEntity タグを追加します。
+</p>
+
+<p>
+LoadEntity タグには、ロードするエンティティ定義ファイル名をコロン : に続けて書きます。
+例えば、enemy.xentity として保存されているエンティティを一つだけ含むシーンは、以下のように書きます
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Scene>
+		&lt;LoadEntity:enemy />
+	&lt;/Scene>
+</code></pre>
+
+<p>
+<b>コロンの前後に空白を入れてはいけません</b><br>
+XMLの仕様上、"LoadEntity:enemy" で一つのタグ名にする必要があるからです。
+</p>
+
+
+エンティティのコンポーネントのプロパティ値を指定したい場合は、LoadEntity タグの属性としてコンポーネント名とプロパティ名、値の組を書きます。
+例えば上記の例で、enemy の座標を指定したいなら以下のように書きます
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Scene>
+		&lt;LoadEntity:enemy
+			Transform.pos.x = "10"
+			Transform.pos.y = "20"
+			Transform.pos.z = "30"
+		 />
+	&lt;/Scene>
+</code></pre>
+
+<p>
+上記の例にある Transform.pos.x というのは、エンティティ定義ファイルでのコンポーネントタグ Transform と、その属性名 pos.x をピリオドでつなげたものです。
+ほかのコンポーネント、属性名の組み合わせも同じようにして指定できます。例えば SpriteLayer コンポーネントの属性 layer0.sprite を指定するなら
+SpriteRenderer.layer0.sprite="XXX.sprite" と書きます
+</p>
+
+<p>
+複数のエンティティを追加する場合は、必要なだけ LoadEntity タグを並べます。
+上記の例で、座標だけを変えて 3 つの enemy.xentity を配置したい場合は以下のように書きます。
+</p>
+
+<pre><code>
+	&lt;?xml version="1.0" encoding="sjis" ?>
+	&lt;Scene>
+		&lt;LoadEntity:enemy
+			Transform.pos.x = "0"
+			Transform.pos.y = "0"
+			Transform.pos.z = "0"
+		 />
+		&lt;LoadEntity:enemy
+			Transform.pos.x = "100"
+			Transform.pos.y = "10"
+			Transform.pos.z = "10"
+		 />
+		&lt;LoadEntity:enemy
+			Transform.pos.x = "200"
+			Transform.pos.y = "20"
+			Transform.pos.z = "20"
+		 />
+	&lt;/Scene>
+</code></pre>
+
+Scene タグには LoadEntity タグを含めることができます。LoadEntity は指定されたエンティティをロードし、
+必要ならばコンポーネントの値を上書きします。
+
+
+<a name="shader" />
+<h2>シェーダー</h2>
+
+<h3>組み込みシェーダー変数</h3>
+HLSL シェーダーで以下のユニフォーム変数を宣言しておくと、ゲームエンジン側から値を受け取ることができます。
+<table>
+	<tr><th>uniform 変数名</th><th>型</th><th></th></tr>
+	<tr><td>mo__MatrixView</td><td>float4x4</td><td>描画時に指定した RenderParams::transform_matrix の値</td></tr>
+	<tr><td>mo__MatrixProj</td><td>float4x4</td><td>描画時に指定した RenderParams::projection_matrix の値</td></tr>
+	<tr><td>mo__Texture</td><td>texture</td><td>Material::setMainTexture で指定されたテクスチャ</td></tr>
+	<tr><td>mo__TextureSize</td><td>float2</td><td>Material::setMainTexture で指定されたテクスチャのピクセル単位での大きさ</td></tr>
+	<tr><td>mo__Color</td><td>float4</td><td>Material::setMainColor で指定された色</td></tr>
+	<tr><td>mo__Specular</td><td>float4</td><td>Material::setSpecular で指定された色</td></tr>
+	<tr><td>mo__Time</td><td>float</td>
+		<td>フレーム単位でのゲーム内時刻。
+		描画時に指定した RenderParams::time の値で、デフォルト状態では EngineSystem::gameClock() の値と同じ
+		</td></tr>
+	<tr><td>mo__TimeSec</td><td>float</td><td>秒単位でのゲーム内時刻</td></tr>
+</table>
+
+
+
+
+<a name="lib" />
+<h2>使用ライブラリ・データ</h2>
+
+<a name="lib-mplus" />
+<h3>M+ FONTS</h3>
+<ul>
+	<li>個人利用、商用利用、配布が自由にできる日本語フォント</li>
+	<li><a href="http://mplus-fonts.sourceforge.jp/">http://mplus-fonts.sourceforge.jp/</a></li>
+</ul>
+
+<a name="lib-stb" />
+<h3>stb</h3>
+<ul>
+	<li>画像ファイルやフォントなどの便利なライブラリ。ヘッダのみでお手軽に使える</li>
+	<li><a href="http://nothings.org/">http://nothings.org/</a></li>
+	<li>パブリックドメインなライブラリのため、あやかしエンジンのソースツリーに同梱してある。<br>
+		stb_image.h<br>
+		stb_image_write.h<br>
+		stb_perlin.h<br>
+		stb_truetype.h<br>
+		stb_vorbis.c<br>
+	</li>
+</ul>
+
+
+<a name="lib-z" />
+<h3>zlib</h3>
+<ul>
+	<li>データの可逆圧縮と展開のためのライブラリ</li>
+	<li><a href="www.zlib.net">www.zlib.net</a></li>
+	<li>Visual Studio Express 2013 の場合
+		<ul>
+			ダウンロードしたアーカイブ内の contrib/vstudio/vc11/zlibvc.sln を開く<br>
+			プロジェクト zlibstat を選ぶ<br>
+			プロジェクトのプロパティを開き、プリプロセッサ ZLIB_WINAPI の定義を削除する<br>
+			静的ライブラリとしてビルドする
+		</ul>
+	</li>
+	<li>Xcode 5 の場合<br>
+		<ul>MacOS には標準で libz.a が含まれているので、それを使う</ul>
+	</li>
+</ul>
+
+
+<a name="lib-imgui" />
+<h3>ImGUI</h3>
+<ul>
+	<li>イミディエイトモード GUI のためのライブラリ</li>
+	<li><a href="https://github.com/ocornut/imgui">https://github.com/ocornut/imgui</a></li>
+	<li>
+		かなり頻繁に更新されている（一日に数回程度）<br>
+		作者は日本に住んでいたことがあるらしく、この手のライブラリとしては珍しくマルチバイト文字にきちんと対応している。<br>
+		また、twitter で ImGUI の話題や疑問を書くと日本語で返事をくれる<br>
+		基本的なソースコードが 1 ファイルにまとまっているので非常に扱いやすい
+	</li>
+</ul>
+
+
+<a name="lib-lua" />
+<h3>Lua</h3>
+<ul>
+	<li> 軽量かつ高速なスクリプト言語 Lua のためのライブラリ</li>
+	<li> www.lua.org からソースコードをダウンロード</li>
+	<li>Visual Studio Express 2013 の場合
+		<ul>
+			自分でLua用の空のプロジェクトを作成する<br>
+			ダウンロードしたソースコードを作成したプロジェクトに登録する<br>
+			（インタプリタ実行用のソースは main 関数を含んでいるので登録しない）<br>
+			静的ライブラリとしてビルドする<br>
+		</ul>
+	</li>
+	<li>Xcode 5 の場合<br>
+		<ul>
+			ダウンロードしたソースの場所に cd してから make macosx で liblua.a をビルドする<br>
+			詳細は &lt;lua>/doc/readme.html を参照
+		</ul>
+	</li>
+</ul>
+
+
+<a name="lib-x" />
+<h3>TinyXML</h3>
+<ul>
+	<li>XML を扱うためのライブラリ</li>
+	<li><a href="http://www.grinninglizard.com/tinyxml/">http://www.grinninglizard.com/tinyxml/</a></li>
+	<li>ソースコード一式が入っているのであとは適当に</li>
+</ul>
+
+
+<a name="lib-y" />
+<h3>LibYAML</h3>
+<ul>
+	<li>YAML フォーマットを扱うためのライブラリ</li>
+	<li><a href="http://pyyaml.org/wiki/LibYAML">http://pyyaml.org/wiki/LibYAML</a></li>
+	<li><a href="https://github.com/yaml/libyaml">https://github.com/yaml/libyaml</a></li>
+	<li>ソースコード一式が入っているのであとは適当に</li>
+	<li>静的リンクする場合は <b>YAML_DECLARE_STATIC</b> を定義しておく</li>
+</ul>
+
+
+<h2>参考ライブラリ</h2>
+<p>開発の過程で利用して現在は使っていないライブラリのうち、紹介しておきたいもの</p>
+
+<a name="see-atb" />
+<h3>AntTweakBar</h3>
+<ul>
+	<li>シンプルな GUI ライブラリ</li>
+	<li><a href="http://anttweakbar.sourceforge.net">http://anttweakbar.sourceforge.net</a></li>
+	<li>Visual Studio Express 2013 の場合
+		<ul>
+			<li>プラットフォームツールセットを「Visual Studio 2013 - Windows XP (v120_xp)」にする<br>
+				（WinXPでも実行できるようにするため）
+			<li>デフォルトの状態では DLL をビルドするようになっているため、スタティックライブラリをビルドするように下記部分を変更する
+				<ul>
+					<li>コード生成の設定を「スタティックライブラリ」に変更する</li>
+					<li>出力ファイル名の設定を変えておく<br>
+						（ダイナミックライブラリの lib と混同しないようにするため。
+						例えば $(ProjectName)Static とかにしておく
+					</li>
+					<li>出力ファイル名の拡張子を .dll から .lib に変更する</li>
+					<li>プリプロセッサ設定の <b>TW_EXPORTS</b> を <b>TW_STATIC</b> に変更する</li>
+				</ul>
+			</li>
+			<li>静的ライブラリとしてビルドする
+				<ul>
+					<li>【重要】ライブラリを利用する側で <b>TW_STATIC</b> を定義しておく（DLLではなく静的ライブラリにリンクさせるため）</li>
+					<li>【重要】ライブラリを利用する側で <b>TW_NO_LIB_PRAGMA</b> を定義しておく（リンクファイルが AntTweakBar.h 内の名前と異なる）</li>
+				</ul>
+			</li>
+		</ul>
+	</li>
+	<li>Xcode 5 の場合
+		<ul>
+			ダウンロードしたファイルに含まれている libAntTweakBar.dylib を共有ライブラリフォルダにコピーする（/usr/locals/lib）
+		</ul>
+	</li>
+</ul>
+
+
+<a name="see-fltk" />
+<h3>FLTK 1.3</h3>
+<ul>
+	<li>クロスプラットフォームかつコンパクトなGUIツールキット</li>
+	<li><a href="http://www.fltk.org">http://www.fltk.org</a><br>
+		 (FLTK2.0 は名前空間が導入されて便利になっているが、まだ推奨されていないので注意。代わりにFLTK1.3を使う）</li>
+	<li><a href="http://seriss.com/people/erco/fltk/#OpenGlSimple">OpenGL Simple Example</a></li>
+	<li>Xcode 5 の場合
+		<ul>
+			<li>ターミナルで sudo port install fltk を実行</li>
+			<li>ライブラリを利用する側のプロジェクトを Xcode で開く</li>
+			<li>[Targets] でターゲットを選択</li>
+			<li>[Build Settings][Search Paths] を選び [Header Serach Paths] をダブルクリックして /opt/local/include を追加<br>
+				（隠しフォルダになっている場合があるので注意）
+			</li>
+			<li>[Targets] でターゲットを選択</li>
+			<li>[Build Phases][Link Binary With Libraries] を選ぶ</li>
+			<li>[+] [Add Other...] をクリックして libfltk.a を追加<br>
+				（隠しフォルダになっていてダイアログから見れない時は、ダイアログ内の spotlight を利用する。検索先を this mac にする）
+			</li>
+			<li>[+] [Add Other...] をクリックして libfltk_gl.a を追加</li>
+		</ul>
+	</li>
+</ul>
+
+
+<a name="see-fw" />
+<h3>GLFW</h3>
+<ul>
+	<li><a href="www.glfw.org">www.glfw.org</a></li>
+	<li>ビルドするには <a href="www.cmake.org">CMake</a> が必要</li>
+	<li>CMake を起動し、[Where is the source code] に glfw のソースフォルダを指定し、[Where to build the binaries] に出力先を指定する</li>
+	<li>Visual Studio Express 2013 の場合
+		<ul>
+			<li>[Configure]をクリックして「Visual C++ 2012」を選ぶ</li>
+			<li>静的ライブラリをビルドしたいので [USE_MSVC_RUNTIME_LIBRARY_DLL] のチェックを外す</li>
+			<li>[Genrate] をクリックしてプロジェクトファイルを作成する</li>
+			<li>GLFW.sln が出来上がっているので、それを開く</li>
+			<li>glfw プロジェクトのプロパティを開き、構成の種類を「スタティックライブラリ (.lib)」にする</li>
+			<li>プラットフォームツールセットを「Visual Studio 2013 - Windows XP (v120_xp)」にする（WinXPでも実行できるようにするため）</li>
+			<li>コード生成→ランタイムライブラリを「マルチスレッド(/MT)」または「マルチスレッドデバッグ(/MTd)」にする</li>
+			<li>静的ライブラリとしてビルドする</li>
+		</ul>
+	</li>
+	<li>Xcode 5 の場合
+		<ul>
+			<li>CMake の [Configure] で Xcode 5 を選ぶとlibglfw3.a ができる</li>
+			<li>[Build Settings][Header Search Paths] に glfw のヘッダファイルフォルダを追加する</li>
+			<li>[Build Phases][Link Binary With Libraries]に以下のフレームワークとライブラリを追加する
+				<li>Cocoa.framework</li>
+				<li>IOKit.framework</li>
+				<li>OpenGL.framework</li>
+				<li>QuartzCore.framework</li>
+				<li>libglfw3.a （[Add another]をクリックして登録）</li>
+			</li>
+		</ul>
+	</li>
+</ul>
+
+
+<a name="see-ew" />
+<h3>GLEW</h3>
+<ul>
+	<li>Windows で OpenGL 拡張機能 (GLSLとか) を扱うのに便利なライブラリ</li>
+	<li><a href="http://glew.sourceforge.net">http://glew.sourceforge.net</a></li>
+	<li>glew.h と glew.c をプロジェクトに追加する</li>
+	<li><b>GLEW_STATIC</b> を定義しておく</li>
+</ul>
+
+
+
+<h2>ライセンス</h2>
+
+<h3>M+ FONTS </h3>
+<blockquote>
+	<a href="http://mplus-fonts.sourceforge.jp/">http://mplus-fonts.sourceforge.jp/</a><br>
+	M+ FONTS Copyright (C) 2002-2015 M+ FONTS PROJECT
+</blockquote>
+
+
+<h3>Bullet Physics Library</h3>
+<blockquote>
+	<a href="http://bulletphysics.org/">http://bulletphysics.org/</a><br>
+	The Bullet Physics SDK is licensed under the permissive zlib license.
+</blockquote>
+
+
+<h3>Giflib</h3>
+<blockquote>
+	<a href="http://sourceforge.net/projects/giflib">http://sourceforge.net/projects/giflib</a><br>
+	The GIFLIB distribution is Copyright (c) 1997  Eric S. Raymond
+	<p>
+	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+	The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+	</p>
+</blockquote>
+
+
+<h3>ImGui</h3>
+<blockquote>
+	<a href="https://github.com/ocornut/imgui">https://github.com/ocornut/imgui</a><br>
+	Copyright (c) 2014-2015 Omar Cornut and ImGui contributors
+	<p>Released under the MIT license</p>
+</blockquote>
+
+
+<h3>LibYAML</h3>
+<blockquote>
+	<a href="http://pyyaml.org/wiki/LibYAML">http://pyyaml.org/wiki/LibYAML</a><br>
+	The LibYAML library is written by Kirill Simonov.<br>
+	LibYAML is released under the MIT license.<br>
+	This project is developed for  Python Software Foundation as a part of  Google Summer of Code under the mentorship of  Clark Evans.
+</blockquote>
+
+
+<h3>Lua</h3>
+<blockquote>
+	<a href="http://www.lua.org/license.html">http://www.lua.org/license.html</a><br>
+	Copyright (C) 1994-2008 Lua.org, PUC-Rio. <br>
+	<p>Released under the MIT license
+</blockquote>
+
+
+<h3>Ogg/Vorbis</h3>
+<blockquote>
+	<a href="https://www.xiph.org">https://www.xiph.org</a><br>
+	Copyright (c) 2002-2008 Xiph.org Foundation.<br>
+	<p>
+	Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+	- Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+	- Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+	- Neither the name of the Xiph.org Foundation nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	</p>
+</blockquote>
+
+
+<h3>OpenAL Soft</h3>
+<blockquote>
+	<a href="http://kcat.strangesoft.net/openal.html">http://kcat.strangesoft.net/openal.html</a><br>
+	Released under the <b>LGPL</b> license
+</blockquote>
+
+
+<h3>stb_image, stb_image_write, stb_perlin</h3>
+<blockquote>
+	<a href="http://nothings.org/">http://nothings.org/</a><br>
+	by Sean Barrett<br>
+	Released under the public domain
+</blockquote>
+
+
+<h3>TinyXML</h3>
+<blockquote>
+	<a href="http://www.grinninglizard.com/tinyxml/">http://www.grinninglizard.com/tinyxml/</a><br>
+	Released under the zlib/libpng License
+</blockquote>
+
+
+<h3>zlib</h3>
+<blockquote>
+	<a href="http://www.zlib.net/zlib_license.html">http://www.zlib.net/zlib_license.html</a><br>
+	Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler.<br>
+	Released under the zlib license
+</blockquote>
+
+
+
+</body>
+</html>

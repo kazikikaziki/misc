@@ -1,0 +1,63 @@
+﻿#
+# Encode: UTF8(BOM)
+# Lang: Ja
+#
+#
+# このファイルは CMake のための設定ファイルで、マルチコンフィグ設定をまとめたもの。
+# 単独では利用できない。自分のプロジェクトの CMakeLists.txt 内から include して使う
+#
+# マルチコンフィグについて
+# https://theolizer.com/cpp-school3/cpp-school3-2/
+#
+# このファイルでは、変数 CMAKE_CONFIGURATION_TYPES に対して
+# ステップ実行などが有効なデバッグ版と、最適化などを有効にしたリリース版を設定を同時に追加する。
+# 
+# 事前に exe, dbg, rel def をセットしておく必要がある。
+# 設定例:
+#	set(exe "GameTest") # 実行ファイルの基本名（リリース版での名前。デバッグ版では末尾に "_d" が付く）
+#	set(dbg "Trial_d")  # 構成の名前（デバッグ版）
+#	set(rel "Trial")    # 構成の名前（リリース版）
+#	set(def "/DTEST /DTRIAL") # コンパイラフラグ（ここではTEST, TRIAL というマクロを定義）（デバッグ版、リリース版共通。デバッグ版とリリース版の区別は組み込みマクロの _DEBUG や NDEBUG で行う）
+#	include(CMake_addconf.txt) # 一通り変数を設定したらこのファイルを呼ぶ
+
+if (exe STREQUAL "")
+	message(FATAL_ERROR "変数 'exe' が設定されていません。実行ファイル名を指定してください: e.g.) set(exe \"MyGame\")")
+endif()
+
+if (dbg STREQUAL "")
+	message(FATAL_ERROR "変数 'dbg' が設定されていません。構成の名前（デバッグ版）を指定してください: e.g.) set(dbg \"DEBUG\")")
+endif()
+
+if (rel STREQUAL "")
+	message(FATAL_ERROR "変数 'rel' が設定されていません。構成の名前（リリース版）を指定してください: e.g.) set(rel \"RELEASE\")")
+endif()
+
+
+# 構成名を追加する
+set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES};${dbg};${rel}" CACHE STRING "limited configs" FORCE)
+
+# Debug, Release 向けの設定をコピーして、独自のビルド構成を作成する
+set(CMAKE_CXX_FLAGS_${dbg} "${CMAKE_CXX_FLAGS_DEBUG}   ${def}")
+set(CMAKE_CXX_FLAGS_${rel} "${CMAKE_CXX_FLAGS_RELEASE} ${def}")
+set(CMAKE_EXE_LINKER_FLAGS_${dbg} "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+set(CMAKE_EXE_LINKER_FLAGS_${rel} "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+
+# 実行ファイルの生成先をこのファイル CMakeLists.txt と同じフォルダにする
+set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${dbg} ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${rel} ${CMAKE_CURRENT_SOURCE_DIR})
+
+# PDB ファイルが EXE と同じ場所にあると邪魔なので、生成場所を変更する(MSVC)
+set_target_properties(${PROJECT_NAME} PROPERTIES PDB_OUTPUT_DIRECTORY_${dbg} ${PROJECT_BINARY_DIR})
+set_target_properties(${PROJECT_NAME} PROPERTIES PDB_OUTPUT_DIRECTORY_${rel} ${PROJECT_BINARY_DIR})
+
+# 複数のEXEを同一フォルダ内においても問題ないよう、ファイル名を変えておく
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME_${dbg} "${exe}_d")
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME_${rel} "${exe}"  )
+
+# 連続してこのファイル (CMake_addconf) を呼んだときにトラブルが起きないよう、受け渡し用の変数をクリアしておく
+if (1)
+	set(exe "")
+	set(dbg "")
+	set(rel "")
+	set(def "")
+endif()
